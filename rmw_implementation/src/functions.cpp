@@ -124,13 +124,19 @@ get_library()
     }
     std::string library_path = find_library_path(env_var);
     if (library_path.empty()) {
-      RMW_SET_ERROR_MSG("failed to find shared library of rmw implementation");
+      RMW_SET_ERROR_MSG(("failed to find shared library of rmw implementation. Searched " +
+        env_var).c_str());
       return nullptr;
     }
     try {
       lib = new Poco::SharedLibrary(library_path);
+    } catch (Poco::LibraryLoadException & e) {
+      RMW_SET_ERROR_MSG(("failed to load shared library of rmw implementation. Exception: " +
+        e.displayText()).c_str());
+      return nullptr;
     } catch (...) {
-      RMW_SET_ERROR_MSG("failed to load shared library of rmw implementation");
+      RMW_SET_ERROR_MSG(("failed to load shared library of rmw implementation: " +
+        library_path).c_str());
       return nullptr;
     }
   }
@@ -197,7 +203,8 @@ rmw_init(void)
 }
 
 rmw_node_t *
-rmw_create_node(const char * name, const char * namespace_, size_t domain_id,
+rmw_create_node(
+  const char * name, const char * namespace_, size_t domain_id,
   const rmw_node_security_options_t * security_options)
 {
   CALL_SYMBOL(
